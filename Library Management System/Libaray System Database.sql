@@ -456,3 +456,45 @@ SELECT FullName,Email,  Title,genre,  LoanDate, DueDate, ReturnDate, Status
 FROM BOOK B, Loan L, Member M
 WHERE B.BookID = L.BookID AND
 M.MemberID = L.MemberID;
+
+
+--------LEFT JOIN ------------
+-- Task 3.1
+SELECT Title, Genre, Rating, Comments
+FROM Book B LEFT JOIN Review R
+ON B.BookID = R.BookID;
+
+--- Task3.2
+SELECT FullName , Email, LoanDate, DueDate, Status
+FROM Member M LEFT JOIN Loan L
+ON M.MemberID = L.MemberID;
+
+--- Task 3.3
+SELECT L.LoanID, LoanDate, Status, PaymentDate, Amount
+FROM Loan L LEFT JOIN Payment P
+ON L.LoanID = P.LoanID;
+
+--- Task 3.4
+SELECT Name, Location, FullName, Position
+FROM Libarary LI LEFT OUTER JOIN Staff S
+ON LI.LibararyID = S.LibararyID;
+
+
+--- Task3.5
+SELECT FullName, Email, PhoneNumber,LoanID,  LoanDate, Status
+FROM Member M LEFT OUTER JOIN Loan L
+ON M.MemberID = L.MemberID
+WHERE L.LoanID IS NULL;
+
+-- Task3.6
+SELECT Title, Genre, Price
+FROM Book B LEFT OUTER JOIN Review R
+ON B.BookID = R.BookID
+WHERE R.ReviewID IS NULL;
+
+-- Task3.7
+SELECT Title, FullName, Rating, Comments
+FROM Book B LEFT JOIN Review R
+ON B.BookID = R.BookID
+LEFT JOIN Member M
+ON R.MemberID = M.MemberID;

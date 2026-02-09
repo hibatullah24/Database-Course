@@ -401,3 +401,58 @@ WHERE YEAR (DueDate)=2024 AND ReturnDate IS NULL
 ORDER BY LoanDate ASC;
 
 
+----JOINs Statment :
+-- Task 2.1
+SELECT LoanID, Title, LoanDate, DueDate 
+FROM Loan L , Book B
+WHERE B.BookID = L.BookID;
+
+-- Task 2.2
+SELECT   FullName, Position, Name, Location
+FROM Libarary LI INNER JOIN Staff S
+ON LI.LibararyID = S.LibararyID;
+
+--Task2.3
+SELECT Title, Genre, Price, Name, Location
+FROM Book B , Libarary LI
+WHERE LI.LibararyID = B.LibraryID;
+
+--Task2.4
+SELECT FullName, Rating, Comments, ReviewDate
+FROM Review R , Member M
+WHERE M.MemberID = R.MemberID;
+
+--Task2.5
+SELECT Title, Rating, Comments, ReviewDate
+FROM Book B INNER JOIN Review R
+ON B.BookID = R.BookID;
+
+-- Task 2.6
+SELECT L.LoanID, PaymentDate, Amount, Method, Status
+FROM Loan L
+INNER JOIN Payment P
+ON L.LoanID = P.LoanID;
+
+-- Task 2.7
+SELECT FullName, Title, LoanDate, DueDate, Status
+FROM Member M , Book B, Loan L
+WHERE M.MemberID = L.MemberID AND
+B.BookID = L.BookID;
+
+
+--Task 2.8
+SELECT FullName, Title, Rating, Comments
+FROM Member M, Review R, Book B
+WHERE M.MemberID = R.MemberID AND
+B.BookID = R.BookID;
+
+--Task 2.9
+SELECT Title, Genre, Name, Location, ContactNumber
+FROM Book B, Libarary LI
+WHERE LI.LibararyID = B.LibraryID;
+
+-- Task2.10
+SELECT FullName,Email,  Title,genre,  LoanDate, DueDate, ReturnDate, Status
+FROM BOOK B, Loan L, Member M
+WHERE B.BookID = L.BookID AND
+M.MemberID = L.MemberID;

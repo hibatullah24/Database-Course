@@ -181,6 +181,8 @@ VALUES
 ('2024-05-29', 3.75, 'Card', 10);
 
 
+
+
 INSERT INTO Review (Rating, ReviewDate, MemberID, BookID)
 VALUES
 (5, '2024-05-10', 1, 1),
@@ -498,3 +500,38 @@ FROM Book B LEFT JOIN Review R
 ON B.BookID = R.BookID
 LEFT JOIN Member M
 ON R.MemberID = M.MemberID;
+
+-----RIGHT JOIN ------
+--- Task 4.2
+SELECT FullName, PhoneNumber, LoanDate, Status
+FROM Loan L RIGHT JOIN Member M
+ON M.MemberID = L.MemberID;
+
+--- Task 4.3
+SELECT Name, Title, Genre
+FROM Libarary LI RIGHT JOIN Book B
+ON LI.LibararyID = B.LibraryID;
+
+--- Task 4.4
+SELECT StaffID, FullName, Position, Name, Location
+FROM Libarary LI RIGHT JOIN Staff S
+ON LI.LibararyID = S.LibararyID;
+
+--------- FULL OUTER JOIN ------------
+--- Task 5.1
+SELECT Title, Rating, Comments
+FROM Book B FULL OUTER JOIN Review R
+ON B.BookID = R.BookID;
+
+--- Task 5.2
+SELECT L.LoanID, LoanDate, PaymentDate, Amount
+FROM Loan L FULL OUTER JOIN Payment P
+ON L.LoanID = P.LoanID;
+
+
+--- Task 5.3
+SELECT M.MemberID, M.FullName, B.BookID, B.Title, L.LoanDate, L.DueDate, L.Status
+FROM Member M FULL OUTER JOIN Loan L
+ON M.MemberID = L.MemberID 
+FULL OUTER JOIN Book B
+ON B.BookID = L.BookID;

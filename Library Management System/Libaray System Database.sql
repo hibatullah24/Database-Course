@@ -535,3 +535,130 @@ FROM Member M FULL OUTER JOIN Loan L
 ON M.MemberID = L.MemberID 
 FULL OUTER JOIN Book B
 ON B.BookID = L.BookID;
+
+
+
+-------------- MIXED JOIN ----------
+
+-- Task 6.1
+SELECT M.FullName, L.LoanDate, L.DueDate, L.Status, P.PaymentDate, P.Amount
+FROM Loan L INNER JOIN Member M 
+ON M.MemberID = L.MemberID
+LEFT JOIN Payment P
+ON P.LoanID = L.LoanID
+WHERE L.Status IN ('Issued', 'Overdue');
+
+--Task 6.2
+SELECT Name, Title, Genre, Rating, Comments
+FROM Book B INNER JOIN Libarary LI
+ON Li.LibararyID = B.LibraryID
+LEFT JOIN Review R
+ON B.BookID = R.BookID;
+
+--Task 6.3
+SELECT M.FullName, Title, Name, LoanDate, ReturnDate 
+FROM Loan L INNER JOIN Member M 
+ON M.MemberID = L.MemberID
+INNER JOIN Book B
+ON B.BookID = L.BookID
+INNER JOIN Libarary LI
+ON LI.LibararyID = B.LibraryID;
+
+---- Task  7.1
+SELECT LI.Name AS LibraryName,
+COUNT (DISTINCT  B.BookID) AS TotalBooks,
+COUNT (DISTINCT  S.StaffID) AS TotalStaff,
+COUNT (DISTINCT L.LoanID) AS TotalLoan
+FROM Libarary LI LEFT JOIN Book B
+ON B.LibraryID = LI.LibararyID
+LEFT JOIN Staff S
+    ON S.LibararyID = LI.LibararyID
+LEFT JOIN Loan L
+    ON L.BookID = B.BookID
+GROUP BY LI.Name;
+
+---- Task  7.2
+SELECT M.FullName, M.Email,
+COUNT(DISTINCT L.LoanID)   AS TotalLoans,
+COUNT(DISTINCT R.ReviewID) AS TotalReviewsWritten
+FROM Member M LEFT JOIN Loan L
+ON L.MemberID = M.MemberID
+LEFT JOIN Review R
+ON R.MemberID = M.MemberID
+GROUP BY M.FullName, M.Email;
+
+--- Task 7.3
+SELECT B.Title AS BookTitle, LI.Name AS LibraryName,
+COUNT(DISTINCT L.LoanID) AS TimesBorrowed,
+AVG(CAST(R.Rating AS FLOAT)) AS AverageRating,
+COUNT(DISTINCT R.ReviewID) AS TotalReviews
+FROM Book B INNER JOIN Libarary LI
+ON LI.LibararyID = B.LibraryID
+LEFT JOIN Loan L
+ON L.BookID = B.BookID
+LEFT JOIN Review R
+ON R.BookID = B.BookID
+GROUP BY B.Title, LI.Name;
+
+--- Task 7.4
+SELECT M.FullName, M.Email, B.Title AS BookTitle, LI.Name AS LibraryName,
+DATEDIFF(DAY, L.DueDate, GETDATE()) AS DaysOverdue,
+SUM(P.Amount) AS FinePaid
+FROM Loan L INNER JOIN Member M
+ON M.MemberID = L.MemberID
+INNER JOIN Book B
+ON B.BookID = L.BookID
+INNER JOIN Libarary LI
+ON LI.LibararyID = B.LibraryID
+LEFT JOIN Payment P
+ON P.LoanID = L.LoanID
+WHERE L.Status = 'Overdue'
+GROUP BY M.FullName, M.Email, B.Title, LI.Name, L.DueDate;
+
+
+-- Task 7.5
+SELECT M.FullName AS MemberName, B.Title    AS BookTitle, B.Genre, LI.Location AS LibraryLocation,
+L.LoanDate,L.ReturnDate,
+DATEDIFF(DAY, L.LoanDate, ISNULL(L.ReturnDate, GETDATE())) AS DaysBorrowed,
+R.Rating AS RatingGiven
+FROM Loan L INNER JOIN Member M
+ON M.MemberID = L.MemberID
+INNER JOIN Book B
+ON B.BookID = L.BookID
+INNER JOIN Libarary LI
+ON LI.LibararyID = B.LibraryID
+LEFT JOIN Review R
+ON R.MemberID = M.MemberID
+AND R.BookID   = B.BookID;
+
+
+--- Task 7.6
+SELECT B.Title, B.Genre, B.Price, LI.Name AS LibraryName
+FROM Book B INNER JOIN Libarary LI
+ON LI.LibararyID = B.LibraryID
+LEFT JOIN Loan L ON L.BookID = B.BookID
+WHERE L.LoanID IS NULL;
+
+--- Task 7.7
+SELECT M.FullName, M.Email, M.PhoneNumber
+FROM Member M LEFT JOIN Loan L
+ON L.MemberID = M.MemberID
+LEFT JOIN Review R
+ON R.MemberID = M.MemberID
+WHERE L.LoanID IS NULL
+AND R.ReviewID IS NULL;
+
+--- Task 7.8
+SELECT S.FullName AS StaffName, S.Position, LI.Name AS LibraryName,
+COUNT(DISTINCT B.BookID) AS NumberOfBooks,
+COUNT(DISTINCT L.LoanID) AS NumberOfActiveLoans
+FROM Staff S INNER JOIN Libarary LI
+ON LI.LibararyID = S.LibararyID
+LEFT JOIN Book B
+ON B.LibraryID = LI.LibararyID
+LEFT JOIN Loan L
+ON L.BookID = B.BookID
+AND L.Status IN ('Issued', 'Overdue') 
+GROUP BY S.FullName, S.Position, LI.Name;
+
+

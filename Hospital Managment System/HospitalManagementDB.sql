@@ -1,0 +1,270 @@
+CREATE DATABASE HospitalManagementDB;
+USE HospitalManagementDB;
+
+CREATE TABLE PATIENT(
+Patient_ID INT IDENTITY (1,1) PRIMARY KEY,
+F_name VARCHAR(50) NOT NULL,
+L_name VARCHAR (50) NOT NULL,
+Phone_no VARCHAR (15) NOT NULL UNIQUE,
+Email VARCHAR (100) UNIQUE,
+Address VARCHAR(200),
+DOB DATE NOT NULL,
+Age AS (YEAR(GETDATE()) - YEAR(DOB)),
+
+Blood_group VARCHAR(5),
+Gender VARCHAR(10),
+
+CONSTRAINT CK_Patient_DOB CHECK (DOB <+ GETDATE()),
+CONSTRAINT CK_Patient_Blood CHECK (Blood_group IN ('A+', 'A-', 'B+','B-','AB-','AB+', 'O+', 'O-')),
+CONSTRAINT CK_Patient_Gender CHECK (Gender IN ('M', 'F', 'O'))
+);
+
+CREATE TABLE DEPARTMENT (
+Dept_ID INT IDENTITY (1,1) PRIMARY KEY,
+Dept_name VARCHAR (100) NOT NULL UNIQUE,
+Location VARCHAR(100) NOT NULL,
+No_of_doctors INT DEFAULT 0,
+Contact_number VARCHAR (20) NOT NULL,
+Head_doctor_id INT NULL,
+
+CONSTRAINT CK_Department_Doctors CHECK (No_of_doctors >=0)
+);
+
+CREATE TABLE DOCTOR(
+Doctor_ID INT IDENTITY(1,1) PRIMARY KEY,
+Name VARCHAR(100) NOT NULL,
+Specialization VARCHAR (100) NOT NULL ,
+Phone_no VARCHAR(15) NOT NULL UNIQUE,
+Email VARCHAR(100) NOT NULL  UNIQUE,
+License_no VARCHAR(50) NOT NULL UNIQUE,
+Qualification VARCHAR(200) NOT NULL ,
+Years_of_experience INT,
+Dept_ID INT NOT NULL,
+
+CONSTRAINT CK_Doctor_Experience CHECK (Years_of_experience >=0),
+CONSTRAINT FK_Doctor_Department FOREIGN KEY (Dept_ID) REFERENCES DEPARTMENT(Dept_id)
+);
+
+
+CREATE TABLE APPOINTMENT(
+Appointment_ID INT IDENTITY(1,1) PRIMARY KEY,
+Date DATE NOT NULL,
+Time TIME NOT NULL,
+Status VARCHAR(20) DEFAULT 'Scheduled' NOT NULL ,
+Appointment_type VARCHAR(30) NOT NULL,
+Reason VARCHAR (500),
+
+Patient_ID INT NOT NULL,
+Doctor_ID INT NOT NULL,
+
+CONSTRAINT CK_Appointment_Date CHECK (Date >= CAST(GETDATE() AS DATE)),
+CONSTRAINT CK_Appointment_Status CHECK (Status IN ('Scheduled', 'completed', 'cancelled')),
+CONSTRAINT CK_Appointment_Type CHECK (Appointment_type IN ('Consultation', 'Follow-up', 'Emergency')),
+
+CONSTRAINT FK_Appointment_Patient FOREIGN KEY (Patient_ID) REFERENCES PATIENT (Patient_ID)
+ON DELETE CASCADE,
+
+CONSTRAINT FK_Appointment_Doctor FOREIGN KEY (Doctor_ID) REFERENCES dbo.DOCTOR(Doctor_ID),
+
+CONSTRAINT UQ_Doctor_Date_Time UNIQUE (Doctor_id, Date, Time)
+);
+
+CREATE TABLE SERVICE(
+Service_ID INT IDENTITY (1,1) PRIMARY KEY,
+Service_name VARCHAR(100) NOT NULL,
+Service_type VARCHAR(50),
+Unit_price DECIMAL (10,2) NOT NULL,
+Description TEXT,
+
+Dept_ID INT NOT NULL,
+
+
+CONSTRAINT CK_Service_Type CHECK (Service_type IN ('Consultation','Lab Test','X-Ray','Surgery','Treatment')),
+
+CONSTRAINT CK_Service_Price CHECK (Unit_price >= 0),
+
+CONSTRAINT FK_Service_Department FOREIGN KEY (Dept_ID) REFERENCES DEPARTMENT(Dept_ID)
+);
+
+CREATE TABLE APPOINTMENT_SERVICE(
+Appt_ID INT NOT NULL,
+Service_ID INT NOT NULL,
+Quantity INT NOT NULL DEFAULT 1,
+Unit_price_at_time DECIMAL (10,2) NOT NULL,
+
+Subtotal AS (Quantity * Unit_price_at_time),
+
+
+PRIMARY KEY(Appt_ID, Service_ID),
+
+CONSTRAINT CK_AppService_Quantity CHECK (Quantity >0),
+CONSTRAINT CK_AppService_UnitPrice CHECK (Unit_price_at_time >= 0),
+CONSTRAINT CK_AppService_Subtotal CHECK ((Quantity * Unit_price_at_time) >= 0),
+
+
+CONSTRAINT FK_AppService_Appointment FOREIGN KEY (Appt_ID) REFERENCES APPOINTMENT(Appointment_ID)
+ON DELETE CASCADE
+ON UPDATE CASCADE,
+
+CONSTRAINT FK_AppService_Service FOREIGN KEY (Service_ID) REFERENCES SERVICE(Service_ID)
+ON DELETE NO ACTION
+ON UPDATE CASCADE
+
+);
+
+CREATE TABLE MEDICAL_RECORD(
+MedRecord_ID INT IDENTITY(1,1) PRIMARY KEY,
+Visit_date DATE NOT NULL DEFAULT GETDATE(),
+Diagnosis VARCHAR (MAX) NOT NULL,
+Treatment_plan VARCHAR(MAX) NOT NULL,
+Prescribed_medications VARCHAR (MAX),
+Doctor_notes VARCHAR(MAX),
+Follow_up_required BIT DEFAULT 0,
+Appointment_ID INT UNIQUE NOT NULL,
+
+CONSTRAINT FK_MedicalRecord_Appointment FOREIGN KEY (Appointment_ID) REFERENCES APPOINTMENT(Appointment_ID)
+ON DELETE CASCADE
+);
+
+CREATE TABLE BILLING(
+Bill_ID INT IDENTITY (1,1) PRIMARY KEY,
+Bill_date DATE DEFAULT GETDATE(),
+Total_amount DECIMAL(10,2) NOT NULL,
+Payment_status VARCHAR(20) DEFAULT 'Pending',
+Payment_method VARCHAR(30),
+Due_date DATE NOT NULL,
+
+Appointment_ID INT UNIQUE NOT NULL,
+Patient_ID INT NOT NULL,
+
+CONSTRAINT CK_Billing_Status CHECK (Payment_status IN ('Paid','Pending','Partial')),
+
+CONSTRAINT CK_Billing_Method CHECK (Payment_method IN ('Cash','Card','Insurance', 'Bank Transfer', 'Online')),
+
+CONSTRAINT CK_Billing_Total CHECK (Total_amount >= 0),
+
+CONSTRAINT FK_Billing_Appointment FOREIGN KEY (Appointment_ID) REFERENCES APPOINTMENT(Appointment_ID)
+ON DELETE CASCADE,
+
+CONSTRAINT FK_Billing_Patient FOREIGN KEY (Patient_ID) REFERENCES PATIENT(Patient_ID)
+);
+
+ALTER TABLE DEPARTMENT
+ADD Manager_ID INT NULL;
+
+ALTER TABLE DEPARTMENT
+ADD CONSTRAINT FK_Department_Manager FOREIGN KEY (Manager_ID) REFERENCES DOCTOR(Doctor_ID)
+ON DELETE SET NULL
+ON UPDATE CASCADE;
+
+ALTER TABLE DOCTOR
+ADD Supervisor_ID INT NULL;
+
+ALTER TABLE DOCTOR
+ADD CONSTRAINT FK_Doctor_Supervisor FOREIGN KEY (Supervisor_ID) REFERENCES DOCTOR(Doctor_ID)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION;
+
+IF OBJECT_ID('CK_Patient_DOB', 'C') IS NOT NULL
+ALTER TABLE PATIENT DROP CONSTRAINT CK_Patient_DOB;
+
+ALTER TABLE PATIENT 
+ADD CONSTRAINT CK_Patient_DOB CHECK (DOB <= CAST(GETDATE() AS DATE));
+
+IF OBJECT_ID('FK_Department_HeadDoctor', 'F') IS NOT NULL
+ALTER TABLE DEPARTMENT DROP CONSTRAINT FK_Department_HeadDoctor;
+
+ALTER TABLE DEPARTMENT
+ADD CONSTRAINT FK_Department_HeadDoctor
+FOREIGN KEY (Head_doctor_ID)
+REFERENCES DOCTOR(Doctor_ID)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION;
+
+IF OBJECT_ID('FK_Doctor_Department', 'F') IS NOT NULL
+ALTER TABLE DOCTOR DROP CONSTRAINT FK_Doctor_Department;
+
+ALTER TABLE DOCTOR
+ADD CONSTRAINT FK_Doctor_Department FOREIGN KEY (Dept_ID) REFERENCES dbo.DEPARTMENT(Dept_ID)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION;
+
+IF OBJECT_ID('CK_Appointment_Status', 'C') IS NOT NULL
+ALTER TABLE APPOINTMENT DROP CONSTRAINT CK_Appointment_Status;
+
+ALTER TABLE APPOINTMENT
+ADD CONSTRAINT CK_Appointment_Status CHECK (Status IN ('Scheduled','Completed','Cancelled','No-Show'));
+
+IF OBJECT_ID('FK_Appointment_Patient', 'F') IS NOT NULL
+ALTER TABLE APPOINTMENT DROP CONSTRAINT FK_Appointment_Patient;
+
+ALTER TABLE APPOINTMENT
+ADD CONSTRAINT FK_Appointment_Patient FOREIGN KEY (Patient_ID) REFERENCES dbo.PATIENT(Patient_ID)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+IF OBJECT_ID('FK_Appointment_Doctor', 'F') IS NOT NULL
+ALTER TABLE APPOINTMENT DROP CONSTRAINT FK_Appointment_Doctor;
+
+ALTER TABLE APPOINTMENT
+ADD CONSTRAINT FK_Appointment_Doctor FOREIGN KEY (Doctor_ID) REFERENCES dbo.DOCTOR(Doctor_ID)
+ON DELETE NO ACTION
+ON UPDATE CASCADE;
+
+UPDATE SERVICE
+SET Service_type = 'Treatment'
+WHERE Service_type IS NULL;
+
+ALTER TABLE SERVICE
+ALTER COLUMN Service_type VARCHAR(50) NOT NULL;
+
+IF OBJECT_ID('CK_Service_Type', 'C') IS NOT NULL
+ALTER TABLE SERVICE DROP CONSTRAINT CK_Service_Type;
+
+ALTER TABLE SERVICE
+ADD CONSTRAINT CK_Service_Type
+CHECK (Service_type IN ('Consultation','Lab Test','X-Ray','MRI','CT Scan','Surgery','Treatment','Therapy'));
+
+UPDATE BILLING
+SET Payment_status = 'Pending'
+WHERE Payment_status IS NULL;
+
+ALTER TABLE BILLING
+ALTER COLUMN Payment_status VARCHAR(20) NOT NULL;
+
+IF OBJECT_ID('CK_Billing_Status', 'C') IS NOT NULL
+ALTER TABLE BILLING DROP CONSTRAINT CK_Billing_Status;
+
+ALTER TABLE BILLING
+ADD CONSTRAINT CK_Billing_Status
+CHECK (Payment_status IN ('Paid','Pending','Partial','Overdue'));
+
+IF OBJECT_ID('CK_Billing_Method', 'C') IS NOT NULL
+ALTER TABLE dbo.BILLING DROP CONSTRAINT CK_Billing_Method;
+
+ALTER TABLE BILLING
+ADD CONSTRAINT CK_Billing_Method
+CHECK (Payment_method IS NULL OR Payment_method IN ('Cash','Card','Insurance','Bank Transfer','Online'));
+
+IF OBJECT_ID('CK_Billing_DueDate', 'C') IS NOT NULL
+ALTER TABLE BILLING DROP CONSTRAINT CK_Billing_DueDate;
+
+ALTER TABLE BILLING
+ADD CONSTRAINT CK_Billing_DueDate CHECK (Due_date >= Bill_date);
+
+IF OBJECT_ID('FK_Billing_Appointment', 'F') IS NOT NULL
+ALTER TABLE BILLING DROP CONSTRAINT FK_Billing_Appointment;
+
+ALTER TABLE BILLING
+ADD CONSTRAINT FK_Billing_Appointment FOREIGN KEY (Appointment_ID) REFERENCES APPOINTMENT(Appointment_ID)
+ON DELETE NO ACTION
+ON UPDATE CASCADE;
+
+IF OBJECT_ID('FK_Billing_Patient', 'F') IS NOT NULL
+ALTER TABLE BILLING DROP CONSTRAINT FK_Billing_Patient;
+
+ALTER TABLE BILLING
+ADD CONSTRAINT FK_Billing_Patient FOREIGN KEY (Patient_ID) REFERENCES PATIENT(Patient_ID)
+ON DELETE NO ACTION
+ON UPDATE NO ACTION;
+
